@@ -4,7 +4,7 @@ using CMPlot
 using PlotlyJS
 using Test
 
-println("Using dataframe with Iris data")
+println("Creating dataframe with Iris data")
 
 df = DataFrame(
 [5.1 3.5 1.4 0.2 "setosa";
@@ -176,10 +176,6 @@ traces, layout = cmplot(df, xcol=:Species,
 #test_plot_of_cmplot
 println("Testing plot_of_cmplot")
 @test isa(plot(cmplot(df, xcol=:Species)...),PlotlyJS.SyncPlot)
-
-#test_ycol_typeerror
-println("Testing ycol_typeerror")
-@test_throws TypeError cmplot(df, xcol=:Species, ycol=["SepalLength", :PetalLength])
 
 #test_symbol_not_present
 println("Testing symbol_not_present")
