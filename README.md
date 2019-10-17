@@ -1,5 +1,7 @@
 # CMPlot.jl - Cloudy Mountain Plot in Julia
 
+[![Build Status](https://travis-ci.org/g-insana/CMPlot.jl.svg?branch=master)](https://travis-ci.org/g-insana/CMPlot.jl)
+
 An informative RDI categorical distribution plot inspired by Violin, Bean and Pirate Plots.
 
 (RDI = Raw data + Descriptive statistics + Inferential statistics)
