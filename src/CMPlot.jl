@@ -248,13 +248,12 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
             hdi: highest density interval of posterior for specified credible_mass
         =#
                 
-        n = length(x_val)
-        v = n - 1
-        mu = mean(x_val)
-        se = std(x_val) / sqrt(n)
-        vm = var(x_val) / n
-        ts = se .* rand(TDist(v), iterations) .+ mu
-        hdi = hdi_from_mcmc(ts, credible_mass=credible_mass)
+        num = length(x_val)
+        dof = num - 1
+        xmean = mean(x_val)
+        std_err = std(x_val) / sqrt(num)
+        t_s = std_err .* rand(TDist(dof), iterations) .+ xmean
+        hdi = hdi_from_mcmc(t_s, credible_mass=credible_mass)
         return hdi
     end
   
@@ -263,7 +262,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     dfsymbols = names(data_frame) #all column names
   
     if xcol == nothing
-        print("ERROR: you need to specify xcol argument, e.g. :Species")
+        throw(ArgumentError("you need to specify xcol argument, e.g. :Species"))
     end
     xsymbols = []
     if isa(xcol, Array{Symbol, 1})
@@ -271,12 +270,10 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     elseif isa(xcol, Symbol)
         xsymbols = [xcol] #create array of a single symbol
     else
-        print("ERROR: xcol must be of type Symbol, e.g. :Species or an Array of Symbols, e.g. [:Gender,:Species]")
-        return nothing, nothing
+        throw(TypeError(xcol, "xcol must be of type Symbol, e.g. :Species or an Array of Symbols, e.g. [:Gender,:Species]"))
     end
     if length(intersect(Set(xsymbols), Set(dfsymbols))) != length(Set(xsymbols)) #check sanity of specified xcol
-        print("ERROR: xcol contains symbols not present in the dataframe")
-        return nothing, nothing
+        throw(DomainError(xcol,"xcol contains symbols not present in the dataframe"))
     end
     ysymbols = []
     if ycol == nothing
@@ -287,30 +284,25 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         elseif isa(ycol, Symbol)
             ysymbols = [ycol] #create array of a single symbol
         else
-            print("ERROR: ycolumns must be a Symbol or an Array of Symbols, e.g. [:SepalLength,:SepalWidth]")
-            return nothing, nothing
+            throw(TypeError(ycol,"ycolumns must be a Symbol or an Array of Symbols, e.g. [:SepalLength,:SepalWidth]"))
         end
         if length(intersect(Set(ysymbols), Set(dfsymbols))) != length(Set(ysymbols)) #check sanity of specified ycols
-            print("ERROR: ycol contains symbols not present in the dataframe")
-            return nothing, nothing
+            throw(DomainError(ycol,"ycol contains symbols not present in the dataframe"))
         end
         if length(intersect(Set(xsymbols), Set(ysymbols))) != 0 #check for common symbols
-            print("ERROR: ycol and xcol should not contain the same symbol(s)!")
-            return nothing, nothing
+            throw(ArgumentError("ycol and xcol should not contain the same symbol(s)!"))
         end
     end
     
     if !(orientation in ("v","h"))
-        print("ERROR: if defining orientation, use either h or v")
-        return nothing, nothing
+        throw(DomainError(orientation,"if defining orientation, use either h or v"))
     end
     if !(inf in ("hdi", "ci", "iqr", "none"))
-        print("ERROR: if defining inference band type, use either
+        throw(DomainError(inf,"if defining inference band type, use either
                   ci (Student's t-test confidence intervals)
                   or hdi (Bayesian Posterior Highest Density Interval)
                   or iqr (InterQuartileRange)
-                  or none (no band)")
-        return nothing, nothing
+                  or none (no band)"))
     end
     plot_title = ""
     if title == nothing
@@ -408,8 +400,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         sides = ["negative"]
         pointpositions = [pointsdistance]
     else
-        println("ERROR: if defining side, use one of both|alt|pos|neg")
-        return nothing, nothing
+        throw(DomainError(side,"if defining side, use one of both|alt|pos|neg"))
     end
     if pointsoverdens
         #invert the values and hence the sides of the raw points positions 
@@ -460,9 +451,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         if isa(pointshapes, Array{String, 1})
             markersymbols = pointshapes
         else
-            print("ERROR: pointshapes must be an Array of markersymbol strings,
-                      e.g. [\"circle\", \"diamond\"]")
-            return nothing, nothing
+            throw(TypeError(pointshapes,"pointshapes must be an Array of markersymbol strings, e.g. [\"circle\", \"diamond\"]"))
         end
     else
         markersymbols = ["circle", "diamond", "cross", "triangle-up",

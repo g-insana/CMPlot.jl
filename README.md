@@ -48,7 +48,7 @@ julia> plot(cmplot(mydataframe,xcol=:xsymbol)...)
 
  #alternatively get traces and layout as separate variables, so that you can modify them or combine with others before passing them to Figure() function:
 
-julia> traces,layout=(cmplot(mydataframe,xcol=:xsymbol)
+julia> traces,layout=cmplot(mydataframe,xcol=:xsymbol)
 
 julia> # [...] do something with traces/layout
 
