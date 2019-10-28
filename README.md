@@ -26,13 +26,22 @@ Please refer to the [online documentation at readthedocs.io](https://cmplot.read
 
 ## Download and installation
 
-CMPlot is pure Julia code. It has no platform-specific dependencies and should thus work on all platforms. It requires the packages `plotly numpy scipy pandas`. The latest version of CMPlot can be installed by typing:
+CMPlot is pure Julia code. It has no platform-specific dependencies and should thus work on all platforms. It requires the packages `DataFrames` `Distributions` and `PlotlyJS`.
+The latest version of CMPlot can be installed simply by typing:
 
 ``` julia
-julia> ] dev https://github.com/g-insana/CMPlot.jl.git
+julia> import Pkg; Pkg.add("CMPlot")
+```
+(from the [official Julia registry](https://github.com/JuliaRegistries/General)) or
+
+``` julia
+julia> ]
+(v1.1) pkg> dev https://github.com/g-insana/CMPlot.jl.git
 ```
 
-alternatively save CMPlot.jl to your julia loadpath or add the directory you placed it to your load path:
+to install from this GitHub page.
+
+Alternatively you can also save CMPlot.jl to your julia loadpath or add the directory where you downloaded it to your load path:
 ``` julia
 julia> push!(LOAD_PATH, "./")
 ```
