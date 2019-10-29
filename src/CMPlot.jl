@@ -193,7 +193,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         * traces: list of instances of plotly GenericTrace
         * layout: instance of plotly Layout
     =#
-  
+
   # # 0) Helper functions:
     function t_test_ci(x_val; conf_level=0.95)
         #=
@@ -207,12 +207,12 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         tstar = quantile(TDist(deg_freedom), 1 - alpha/2) #tstar: the 1−α/2 quantile of a T-distribution with n-1 d.o.f.
         SE = std(x_val)/sqrt(length(x_val))
         xmean = mean(x_val)
-  
+
         lo = xmean - tstar * SE
         hi = xmean + tstar * SE
         return(lo, hi)
     end
-  
+
     function hdi_from_mcmc(posterior_samples; credible_mass=0.95)
         #=
         Computes highest density interval from a sample of representative values,
@@ -238,7 +238,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         hdi_max = sorted_points[findfirst(isequal(minimum(ci_width)), ci_width)+ci_idx_inc]
         return(hdi_min, hdi_max)
     end
-  
+
     function ttest_bayes_ci(x_val; iterations=1000, credible_mass=0.95)
         #=
         Originally from https://github.com/tszanalytics/BayesTesting.jl
@@ -250,7 +250,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         Returns:
             hdi: highest density interval of posterior for specified credible_mass
         =#
-                
+
         num = length(x_val)
         dof = num - 1
         xmean = mean(x_val)
@@ -259,11 +259,11 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         hdi = hdi_from_mcmc(t_s, credible_mass=credible_mass)
         return hdi
     end
-  
+
     # # 1) Arguments' parsing:
-    
+
     dfsymbols = names(data_frame) #all column names
-  
+
     if xcol == nothing
         throw(ArgumentError("you need to specify xcol argument, e.g. :Species"))
     end
@@ -296,7 +296,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
             throw(ArgumentError("ycol and xcol should not contain the same symbol(s)!"))
         end
     end
-    
+
     if !(orientation in ("v","h"))
         throw(DomainError(orientation,"if defining orientation, use either h or v"))
     end
@@ -313,29 +313,31 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     else
         plot_title = title
     end
-    
+
     if xlabel != nothing
         if ! isa(xlabel, Array) #if it's not already an array, make it so
             xlabel = [xlabel]
         end
     end
-  
+
     # # 2) divide up data by xsymbols and then ysymbol and calculate stats, preparing datas array:
-    
+
     datas = []
     sides_x = Dict() #useful when xsuperimposed
     sideindex = 0
     xlabelsoverride = Dict() #useful when xsuperimposed
     xlabelindex = 0
+    rand_int = rand(1:10000) #for scalegroup, to be unique for each cmplot call
+
     #separating distributions for each categorical x:
     for sub_data_frame in groupby(data_frame, xsymbols)
         for ysymbol in ysymbols #by default for all Ys present (or all those specified)
             xvalue = join(sub_data_frame[1, xsymbols],"&")
             xname = join([String(sym) for sym in xsymbols],"&")
-            yname = String(ysymbol)            
+            yname = String(ysymbol)
             #x = [join(r,"&") for r in eachrow(sub_data_frame[:, xsymbols])]
             y_val = sub_data_frame[:, ysymbol]
-            y_lo, y_hi = if inf == "hdi" ttest_bayes_ci(y_val, iterations=hdi_iter, credible_mass=conf_level) 
+            y_lo, y_hi = if inf == "hdi" ttest_bayes_ci(y_val, iterations=hdi_iter, credible_mass=conf_level)
                 elseif inf == "ci" t_test_ci(y_val, conf_level=conf_level)
                 elseif inf == "iqr" quantile(y_val, [0.25, 0.75])
                 else nothing, nothing end
@@ -380,8 +382,8 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
             push!(datas, data)
         end
     end
-  
-    # # 3.1) Stylistic variants:    
+
+    # # 3.1) Stylistic variants:
     sides = []
     jitter = 0.3
     if side == "both"
@@ -406,23 +408,23 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         throw(DomainError(side,"if defining side, use one of both|alt|pos|neg"))
     end
     if pointsoverdens
-        #invert the values and hence the sides of the raw points positions 
+        #invert the values and hence the sides of the raw points positions
         pointpositions *= -1
         #(not applicable when side==both)
     end
-    
+
     label_seen = Dict()
     if ycolorgroups
         legend_tracegroupgap = 0
     else
         legend_tracegroupgap = 10
     end
-    
+
     # # 3.2) Coloring setup
     colorarraylength = length(datas)
     colorindexes = Dict()
 
-    if ycolorgroups        
+    if ycolorgroups
         i = colorshift #override 0 index start if colorshift specified
         for data in datas
             if ! haskey(colorindexes, data.yname)
@@ -432,11 +434,11 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         end
         colorarraylength = length(colorindexes)
     end
-    
+
     if colorrange != nothing #then override colorarraylength
         colorarraylength = colorrange
     end
-  
+
     colorstart = 0
     colorend = 330
     if colorarraylength > 12
@@ -458,7 +460,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         end
     else
         markersymbols = ["circle", "diamond", "cross", "triangle-up",
-                         "triangle-left", "triangle-right", 
+                         "triangle-left", "triangle-right",
                          "triangle-down", "pentagon", "hexagon", "star",
                          "hexagram", "star-triangle-up",
                          "star-square", "star-diamond"]
@@ -470,9 +472,9 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                      range(colorstart, stop=colorend, length=colorarraylength + 1)]
     outliercolors = ["hsla($j, 50%, 50%, 0.9)" for j in
                      range(colorstart, stop=colorend, length=colorarraylength + 1)]
-    
+
     # # 4) Define traces:
-    
+
     traces = GenericTrace[]
     i = colorshift #override 0 index start if colorshift specified
     for data in datas
@@ -509,7 +511,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                          else pointpositions[i % length(pointpositions) + 1] end,
                 spanmode="soft",
                 scalemode="count",
-                scalegroup=data.xvalue,
+                scalegroup=string(data.xvalue,rand_int),
                 legendgroup=legendgroup,
                 line=attr(width=1, color=linecolors[i % length(linecolors) + 1]),
                 side=if xsuperimposed sides[sides_x[data.x_1] % length(sides) + 1] else sides[i % length(sides) + 1] end,
@@ -537,7 +539,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                     width=0,
                     name="",
                     showlegend=false,
-                    scalegroup=data.xvalue,
+                    scalegroup=string(data.xvalue,rand_int),
                     legendgroup=legendgroup,
                     #hoverinfo="none",
                     points="all",
@@ -572,7 +574,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                     name="",
                     showlegend=false,
                     #scalemode="count",
-                    scalegroup=data.xvalue,
+                    scalegroup=string(data.xvalue,rand_int),
                     legendgroup=legendgroup,
                     #hoveron="violins",
                     #hoverinfo=if orientation == "v" "y" else "x" end,
@@ -594,17 +596,17 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                                 symbol=markersymbols[i % length(markersymbols) + 1],
                                 color=outliercolors[i % length(outliercolors) + 1],
                                 line=attr(width=0.5, color=markerlinecolors[i % length(markerlinecolors) + 1])
-                           ) 
+                           )
                 ) #second violin trace for interval band
             ) #push
         end #if data.lo != nothing
     end #for data in datas
-    
+
     # # 5) Define layout
     layout = Layout(
         paper_bgcolor="#eeeeff",
         plot_bgcolor="#ffffff",
-        showlegend=true, 
+        showlegend=true,
         legend_tracegroupgap=legend_tracegroupgap,
         violingap=0, violingroupgap=0,
         violinmode="overlay",
@@ -625,7 +627,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         yaxis_title=if orientation == "h" string(join(xsymbols, ", ", " & "))
                     else string(join(ysymbols, ", ", " & ")) end
     )
-    
+
     # # 6) return both traces and layout, so that layout can be further tweaked
     # #      (or traces added) before plotting
     return traces, layout
