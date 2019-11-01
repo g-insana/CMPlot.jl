@@ -91,7 +91,8 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
 
         * `ylabel`: string or list of strings
 
-        Override for labelling the dependent variables. If not specified, the labels for the dataframe ycol are used.
+        Override for labelling the dependent variables. If not specified,
+        the labels for the dataframe ycol are used.
 
         * `title`: string
 
@@ -122,7 +123,9 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
 
         * `spanmode`: 'soft' | 'hard', default is 'soft'
 
-        Controls the rounding of the kernel density curves or their sharp drop at their extremities. With 'hard' the span goes from the sample's minimum to its maximum value and no further.
+        Controls the rounding of the kernel density curves or their sharp drop at
+        their extremities. With 'hard' the span goes from the sample's minimum to
+        its maximum value and no further.
 
         * `pointsoverdens`: boolean, default is false
 
@@ -333,8 +336,8 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
             ylabel = [ylabel]
         end
         if length(ysymbols) != length(ylabel)
-            println("WARNING: you specified ",length(ylabel),
-                " ylabel overrides but you are plotting ",length(ysymbols),
+            println("WARNING: you specified ", length(ylabel),
+                " ylabel overrides but you are plotting ", length(ysymbols),
                 " dependent variables => labels will be cycled")
         end
     end
@@ -371,7 +374,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
             end
             #x = [join(r,"&") for r in eachrow(sub_data_frame[:, xsymbols])]
             y_val = sub_data_frame[:, ysymbol]
-            if length(y_val) < 2
+            if length(y_val) < 2 #cannot compute inf
                 y_lo, y_hi = nothing, nothing
             else
                 y_lo, y_hi = if inf == "hdi" ttest_bayes_ci(y_val, iterations=hdi_iter, credible_mass=conf_level)
@@ -549,7 +552,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                          else pointpositions[i % length(pointpositions) + 1] end,
                 spanmode=spanmode,
                 scalemode="count",
-                scalegroup=string(data.xvalue,rand_int),
+                scalegroup=string(data.xvalue, rand_int),
                 legendgroup=legendgroup,
                 line=attr(width=1, color=linecolors[i % length(linecolors) + 1]),
                 side=if xsuperimposed sides[sides_x[data.x_1] % length(sides) + 1] else sides[i % length(sides) + 1] end,
@@ -577,7 +580,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                     width=0,
                     name="",
                     showlegend=false,
-                    scalegroup=string(data.xvalue,rand_int),
+                    scalegroup=string(data.xvalue, rand_int),
                     legendgroup=legendgroup,
                     #hoverinfo="none",
                     points="all",
@@ -612,7 +615,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                     name="",
                     showlegend=false,
                     #scalemode="count",
-                    scalegroup=string(data.xvalue,rand_int),
+                    scalegroup=string(data.xvalue, rand_int),
                     legendgroup=legendgroup,
                     #hoveron="violins",
                     #hoverinfo=if orientation == "v" "y" else "x" end,
@@ -670,4 +673,4 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     # #      (or traces added) before plotting
     return traces, layout
 end
-
+end #module
