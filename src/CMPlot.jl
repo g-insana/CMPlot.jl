@@ -30,9 +30,9 @@ using DataFrames
 
 
 function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
-           xsuperimposed=false, xlabel=nothing, title=nothing, orientation="h",
+           xsuperimposed=false, xlabel=nothing, ylabel=nothing, title=nothing, orientation="h",
            inf="hdi", conf_level=0.95, hdi_iter=10000, showboxplot=true,
-           ycolorgroups=true, side="alt", altsidesflip=false,
+           ycolorgroups=true, side="alt", altsidesflip=false, spanmode=nothing,
            showpoints=true, pointsoverdens=false, pointsopacity=0.4,
            markoutliers=true, colorrange=nothing, colorshift=0,
            pointshapes=nothing, pointsdistance=0.6, pointsmaxdisplayed=0)
@@ -89,6 +89,10 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         Override for labelling (and placing) the plots of the categorical
         variables. Only relevant when using `xsuperimposed`
 
+        * `ylabel`: string or list of strings
+
+        Override for labelling the dependent variables. If not specified, the labels for the dataframe ycol are used.
+
         * `title`: string
 
         If not specified, the plot title will be automatically created from the
@@ -115,6 +119,10 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         Set to false to have the function assign a separate colour when plotting
         different values of the categorical variable. Leave as true if all
         should be coloured the same.
+
+        * `spanmode`: 'soft' | 'hard', default is 'soft'
+
+        Controls the rounding of the kernel density curves or their sharp drop at their extremities. With 'hard' the span goes from the sample's minimum to its maximum value and no further.
 
         * `pointsoverdens`: boolean, default is false
 
@@ -319,6 +327,25 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
             xlabel = [xlabel]
         end
     end
+    
+    if ylabel != nothing
+        if ! isa(ylabel, Array) #if it's not already an array, make it so
+            ylabel = [ylabel]
+        end
+        if length(ysymbols) != length(ylabel)
+            println("WARNING: you specified ",length(ylabel),
+                " ylabel overrides but you are plotting ",length(ysymbols),
+                " dependent variables => labels will be cycled")
+        end
+    end
+
+    if spanmode == nothing
+        spanmode = "soft"
+    else
+        if !(spanmode in ("soft","hard"))
+            throw(DomainError(spanmode,"if defining spanmode, only 'soft' and 'hard' are allowed values"))
+        end
+    end
 
     # # 2) divide up data by xsymbols and then ysymbol and calculate stats, preparing datas array:
 
@@ -327,6 +354,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     sideindex = 0
     xlabelsoverride = Dict() #useful when xsuperimposed
     xlabelindex = 0
+    ylabelindex = 0
     rand_int = rand(1:10000) #for scalegroup, to be unique for each cmplot call
 
     #separating distributions for each categorical x:
@@ -334,13 +362,23 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         for ysymbol in ysymbols #by default for all Ys present (or all those specified)
             xvalue = join(sub_data_frame[1, xsymbols],"&")
             xname = join([String(sym) for sym in xsymbols],"&")
-            yname = String(ysymbol)
+            if ylabel == nothing
+                yname = String(ysymbol)
+            else
+                yname = ylabel[ylabelindex % length(ylabel) + 1]
+                ylabelindex += 1
+                println("NOTE: ylabel $ysymbol -> $yname")
+            end
             #x = [join(r,"&") for r in eachrow(sub_data_frame[:, xsymbols])]
             y_val = sub_data_frame[:, ysymbol]
-            y_lo, y_hi = if inf == "hdi" ttest_bayes_ci(y_val, iterations=hdi_iter, credible_mass=conf_level)
-                elseif inf == "ci" t_test_ci(y_val, conf_level=conf_level)
-                elseif inf == "iqr" quantile(y_val, [0.25, 0.75])
-                else nothing, nothing end
+            if length(y_val) < 2
+                y_lo, y_hi = nothing, nothing
+            else
+                y_lo, y_hi = if inf == "hdi" ttest_bayes_ci(y_val, iterations=hdi_iter, credible_mass=conf_level)
+                    elseif inf == "ci" t_test_ci(y_val, conf_level=conf_level)
+                    elseif inf == "iqr" quantile(y_val, [0.25, 0.75])
+                    else nothing, nothing end
+            end
             #println("confidence: $y_lo .. $y_hi")
             #y_mode = maximum(modes(y_val))
             if xsuperimposed
@@ -349,9 +387,9 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                     x_0 = if length(xsymbols)==1 " " else thislabel end
                 else
                     if ! haskey(xlabelsoverride, thislabel)
-                        xlabelsoverride[thislabel]=xlabel[xlabelindex % length(xlabel) + 1]
+                        xlabelsoverride[thislabel] = xlabel[xlabelindex % length(xlabel) + 1]
                         xlabelindex += 1
-                        println("NOTE: label $thislabel -> ", xlabelsoverride[thislabel])
+                        println("NOTE: xlabel $thislabel -> ", xlabelsoverride[thislabel])
                     end
                     x_0 = xlabelsoverride[thislabel]
                 end
@@ -509,7 +547,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                 jitter=jitter,
                 pointpos=if xsuperimposed pointpositions[sides_x[data.x_1] % length(pointpositions) + 1]
                          else pointpositions[i % length(pointpositions) + 1] end,
-                spanmode="soft",
+                spanmode=spanmode,
                 scalemode="count",
                 scalegroup=string(data.xvalue,rand_int),
                 legendgroup=legendgroup,
@@ -550,7 +588,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
                              else pointpositions[i % length(pointpositions) + 1] end,
                     meanline_visible=false,
                     box_visible=false,
-                    spanmode="soft",
+                    spanmode=spanmode,
                     fillcolor="rgba(0, 0, 0, 0)",
                     line=attr(width=0, color="rgba(0, 0, 0, 0)"),
                     side=if xsuperimposed sides[sides_x[data.x_1] % length(sides) + 1] else sides[i % length(sides) + 1] end,
@@ -616,11 +654,11 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         legend=attr(x=1.1, y=1.1, xanchor="right"),
         xaxis=attr(
             showline=true, showticklabels=true,
-            zeroline=true, visible=true, showgrid=if orientation == "h" false else true end,
+            zeroline=true, visible=true, showgrid=if orientation == "h" false else true end
         ),
         yaxis=attr(
             showline=true, showticklabels=true,
-            zeroline=true, visible=true, showgrid=if orientation == "h" true else false end,
+            zeroline=true, visible=true, showgrid=if orientation == "h" true else false end
         ),
         xaxis_title=if orientation == "h" string(join(ysymbols, ", ", " & "))
                     else string(join(xsymbols, ", ", " & ")) end,
@@ -632,4 +670,4 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     # #      (or traces added) before plotting
     return traces, layout
 end
-end # module
+
