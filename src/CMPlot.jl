@@ -273,18 +273,30 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
 
     # # 1) Arguments' parsing:
 
-    dfsymbols = names(data_frame) #all column names
+    column_names_type = Symbol
 
     if xcol == nothing
-        throw(ArgumentError("you need to specify xcol argument, e.g. :Species"))
+        throw(ArgumentError("you need to specify xcol argument, e.g. :Species or \"Species\""))
     end
     xsymbols = []
     if isa(xcol, Array{Symbol, 1})
-        xsymbols = xcol #already array of symbols
+        xsymbols = xcol #already array of symbols/strings
+    elseif isa(xcol, Array{String, 1})
+        xsymbols = xcol #already array of symbols/strings
+        column_names_type = String
     elseif isa(xcol, Symbol)
-        xsymbols = [xcol] #create array of a single symbol
+        xsymbols = [xcol] #create array of a single symbol/string
+    elseif isa(xcol, String)
+        xsymbols = [xcol] #create array of a single symbol/string
+        column_names_type = String
     else
-        throw(TypeError(xcol, "xcol must be of type Symbol, e.g. :Species or an Array of Symbols, e.g. [:Gender,:Species]"))
+        throw(DomainError(xcol, "xcol must be of type Symbol or String, e.g. :Species or \"Species\" or an Array of Symbols/Strings, e.g. [:Gender,:Species]"))
+    end
+    #fetch all column names, as either string or symbol
+    if column_names_type == Symbol
+      dfsymbols = propertynames(data_frame)
+    else
+      dfsymbols = [ string(x) for x in names(data_frame) ] #for backward compatibility with DataFrames 0.19
     end
     if length(intersect(Set(xsymbols), Set(dfsymbols))) != length(Set(xsymbols)) #check sanity of specified xcol
         throw(DomainError(xcol,"xcol contains symbols not present in the dataframe"))
@@ -293,12 +305,12 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
     if ycol == nothing
         ysymbols = setdiff(Set(dfsymbols), Set(xsymbols))
     else
-        if isa(ycol, Array{Symbol, 1}) #if specified
+        if isa(ycol, Array{column_names_type, 1}) #if specified
             ysymbols = ycol #already an array of symbols
-        elseif isa(ycol, Symbol)
+        elseif isa(ycol, column_names_type)
             ysymbols = [ycol] #create array of a single symbol
         else
-            throw(TypeError(ycol,"ycolumns must be a Symbol or an Array of Symbols, e.g. [:SepalLength,:SepalWidth]"))
+            throw(DomainError(ycol,"ycolumns must be a Symbol, a String or an Array of Symbols, e.g. [:SepalLength,:SepalWidth]. Please use same type as xcolumns"))
         end
         if length(intersect(Set(ysymbols), Set(dfsymbols))) != length(Set(ysymbols)) #check sanity of specified ycols
             throw(DomainError(ycol,"ycol contains symbols not present in the dataframe"))
@@ -306,6 +318,12 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         if length(intersect(Set(xsymbols), Set(ysymbols))) != 0 #check for common symbols
             throw(ArgumentError("ycol and xcol should not contain the same symbol(s)!"))
         end
+    end
+
+    #now convert all back to Symbols
+    if column_names_type == String
+        xsymbols = [ Symbol(x) for x in xsymbols ]
+        ysymbols = [ Symbol(y) for y in ysymbols ]
     end
 
     if !(orientation in ("v","h"))
@@ -497,7 +515,7 @@ function cmplot(data_frame::DataFrame; xcol=nothing, ycol=nothing,
         if isa(pointshapes, Array{String, 1})
             markersymbols = pointshapes
         else
-            throw(TypeError(pointshapes,"pointshapes must be an Array of markersymbol strings, e.g. [\"circle\", \"diamond\"]"))
+            throw(DomainError(pointshapes,"pointshapes must be an Array of markersymbol strings, e.g. [\"circle\", \"diamond\"]"))
         end
     else
         markersymbols = ["circle", "diamond", "cross", "triangle-up",
