@@ -1,7 +1,7 @@
 name = "CMPlot"
 uuid = "79866cb8-e9c7-11e9-0ec0-4bf12ba13504"
 authors = ["Giuseppe Insana <insana@insana.net>"]
-version = "1.0.1"
+version = "1.0.4"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
